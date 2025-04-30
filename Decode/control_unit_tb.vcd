@@ -1,0 +1,276 @@
+$date
+	Wed Apr 30 01:51:29 2025
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module control_unit_tb $end
+$var wire 2 ! ResultSrc [1:0] $end
+$var wire 1 " RegWrite $end
+$var wire 1 # MemWrite $end
+$var wire 1 $ Jump $end
+$var wire 3 % ImmSrc [2:0] $end
+$var wire 1 & Branch $end
+$var wire 1 ' ALUSrc $end
+$var wire 5 ( ALUControl [4:0] $end
+$var reg 3 ) funct3 [2:0] $end
+$var reg 1 * funct7b0 $end
+$var reg 1 + funct7b5 $end
+$var reg 7 , opcode [6:0] $end
+$scope module uut $end
+$var wire 3 - funct3 [2:0] $end
+$var wire 1 * funct7b0 $end
+$var wire 1 + funct7b5 $end
+$var wire 7 . opcode [6:0] $end
+$var parameter 3 / IMM_B $end
+$var parameter 3 0 IMM_I $end
+$var parameter 3 1 IMM_IU $end
+$var parameter 3 2 IMM_I_SHFT $end
+$var parameter 3 3 IMM_J $end
+$var parameter 3 4 IMM_S $end
+$var parameter 3 5 IMM_U $end
+$var parameter 5 6 OP_ADD $end
+$var parameter 5 7 OP_AND $end
+$var parameter 5 8 OP_DIV $end
+$var parameter 5 9 OP_DIVU $end
+$var parameter 5 : OP_MUL $end
+$var parameter 5 ; OP_MULH $end
+$var parameter 5 < OP_MULHSU $end
+$var parameter 5 = OP_MULHU $end
+$var parameter 5 > OP_NOP $end
+$var parameter 5 ? OP_OR $end
+$var parameter 5 @ OP_REM $end
+$var parameter 5 A OP_REMU $end
+$var parameter 5 B OP_SLL $end
+$var parameter 5 C OP_SLT $end
+$var parameter 5 D OP_SLTU $end
+$var parameter 5 E OP_SRA $end
+$var parameter 5 F OP_SRL $end
+$var parameter 5 G OP_SUB $end
+$var parameter 5 H OP_XOR $end
+$var parameter 2 I RES_ALU $end
+$var parameter 2 J RES_IMM $end
+$var parameter 2 K RES_MEM $end
+$var parameter 2 L RES_PC4 $end
+$var reg 5 M ALUControl [4:0] $end
+$var reg 1 ' ALUSrc $end
+$var reg 1 & Branch $end
+$var reg 3 N ImmSrc [2:0] $end
+$var reg 1 $ Jump $end
+$var reg 1 # MemWrite $end
+$var reg 1 " RegWrite $end
+$var reg 2 O ResultSrc [1:0] $end
+$upscope $end
+$scope task log_signals $end
+$var reg 100 P instr_name [99:0] $end
+$var reg 32 Q test_num [31:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+b11 L
+b1 K
+b10 J
+b0 I
+b10000 H
+b10 G
+b10100 F
+b10110 E
+b1100 D
+b1000 C
+b100 B
+b11101 A
+b11001 @
+b11000 ?
+b11111 >
+b1001 =
+b1101 <
+b101 ;
+b1 :
+b10101 9
+b10001 8
+b11100 7
+b0 6
+b0 5
+b11 4
+b1 3
+b101 2
+b111 1
+b100 0
+b10 /
+$end
+#0
+$dumpvars
+bx Q
+bx P
+b0 O
+b100 N
+b11111 M
+b0 .
+b0 -
+b0 ,
+0+
+0*
+b0 )
+b11111 (
+0'
+0&
+b100 %
+0$
+0#
+0"
+b0 !
+$end
+#10000
+b0 (
+b0 M
+1"
+b110011 ,
+b110011 .
+#20000
+b1 (
+b1 M
+1"
+1*
+b1010010001011010111010001111001011100000110010100100000010000010100010001000100 P
+b1 Q
+#30000
+1'
+b0 (
+b0 M
+1"
+0*
+b10011 ,
+b10011 .
+b1010010001011010111010001111001011100000110010100100000010011010101010101001100 P
+b10 Q
+#40000
+b101 %
+b101 N
+1'
+b10110 (
+b10110 M
+1"
+1+
+b101 )
+b101 -
+b100100100101101011101000111100101110000011001010010000001000001010001000100010001001001 P
+b11 Q
+#50000
+b1 !
+b1 O
+b100 %
+b100 N
+1'
+b0 (
+b0 M
+1"
+0+
+b10 )
+b10 -
+b11 ,
+b11 .
+b100100100101101011101000111100101110000011001010010000001010011010100100100000101001001 P
+b100 Q
+#60000
+b11 %
+b11 N
+1#
+1'
+b0 (
+b0 M
+b0 !
+b0 O
+0"
+b100011 ,
+b100011 .
+b10011000110111101100001011001000010000000101000010011000101011100101001 P
+b101 Q
+#70000
+1&
+b10 %
+b10 N
+0'
+b10 (
+b10 M
+0#
+b0 )
+b0 -
+b1100011 ,
+b1100011 .
+b1010011011101000110111101110010011001010010000000101000010100110101011100101001 P
+b110 Q
+#80000
+b11 !
+b11 O
+1$
+1"
+b1 %
+b1 N
+b0 (
+b0 M
+0&
+b1101111 ,
+b1101111 .
+b10000100111001001100001011011100110001101101000001000000010100001000010010001010101000100101001 P
+b111 Q
+#90000
+1'
+b100 %
+b100 N
+b0 (
+b0 M
+1$
+b11 !
+b11 O
+1"
+b1100111 ,
+b1100111 .
+b10010100100000101001100 P
+b1000 Q
+#100000
+b0 %
+b0 N
+0'
+b0 (
+b0 M
+0$
+b10 !
+b10 O
+1"
+b110111 ,
+b110111 .
+b1001010010000010100110001010010 P
+b1001 Q
+#110000
+1'
+b0 %
+b0 N
+b0 (
+b0 M
+b0 !
+b0 O
+1"
+b10111 ,
+b10111 .
+b10011000101010101001001 P
+b1010 Q
+#120000
+b100 %
+b100 N
+0'
+b11111 (
+b11111 M
+0"
+b1111111 ,
+b1111111 .
+b100000101010101010010010101000001000011 P
+b1011 Q
+#130000
+b1110011101100110000101101100011010010110010000100000010011110111000001100011011011110110010001100101 P
+b1100 Q
+#140000
