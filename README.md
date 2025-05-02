@@ -30,7 +30,7 @@ void main() {
 ```
 
 ### Disassembly 
-```text
+```yaml
    10094:	fd010113          	addi	sp,sp,-48
    10098:	02112623          	sw	ra,44(sp)
    1009c:	02812423          	sw	s0,40(sp)
