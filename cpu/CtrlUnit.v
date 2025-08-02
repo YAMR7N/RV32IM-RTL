@@ -11,7 +11,9 @@ module control_unit (
     output reg       Branch,
     output reg [4:0] ALUControl,
     output reg       ALUSrc,
-    output reg [2:0] ImmSrc
+    output reg       ALUSrcA,    // New: Select PC for ALU input A
+    output reg [2:0] ImmSrc,
+    output reg       BranchInvert   // New: Invert branch condition for BNE, BGE, BGEU
 );
 
     // ALU operation codes
@@ -63,7 +65,9 @@ module control_unit (
         Branch     = 1'b0;
         ALUControl = OP_NOP;
         ALUSrc     = 1'b0;
+        ALUSrcA    = 1'b0;    // Default: use register for ALU A
         ImmSrc     = IMM_I;
+        BranchInvert = 1'b0;  // Default: don't invert
 
         case (opcode)
             7'b0110011: begin // R-type (including M extension)
@@ -159,13 +163,34 @@ module control_unit (
                 ALUSrc    = 1'b0;
                 ImmSrc    = IMM_B;
                 case (funct3)
-                    3'b000: ALUControl = OP_SUB; // BEQ
-                    3'b001: ALUControl = OP_SUB; // BNE
-                    3'b100: ALUControl = OP_SLT; // BLT
-                    3'b101: ALUControl = OP_SLT; // BGE
-                    3'b110: ALUControl = OP_SLTU; // BLTU
-                    3'b111: ALUControl = OP_SLTU; // BGEU
-                    default: ALUControl = OP_NOP;
+                    3'b000: begin  // BEQ
+                        ALUControl = OP_SUB;
+                        BranchInvert = 1'b0;  // Branch if Z=1
+                    end
+                    3'b001: begin  // BNE
+                        ALUControl = OP_SUB;
+                        BranchInvert = 1'b1;  // Branch if Z=0
+                    end
+                    3'b100: begin  // BLT
+                        ALUControl = OP_SLT;
+                        BranchInvert = 1'b0;  // Branch if result=1
+                    end
+                    3'b101: begin  // BGE
+                        ALUControl = OP_SLT;
+                        BranchInvert = 1'b1;  // Branch if result=0
+                    end
+                    3'b110: begin  // BLTU
+                        ALUControl = OP_SLTU;
+                        BranchInvert = 1'b0;  // Branch if result=1
+                    end
+                    3'b111: begin  // BGEU
+                        ALUControl = OP_SLTU;
+                        BranchInvert = 1'b1;  // Branch if result=0
+                    end
+                    default: begin
+                        ALUControl = OP_NOP;
+                        BranchInvert = 1'b0;
+                    end
                 endcase
             end
             7'b1101111: begin // JAL
@@ -185,8 +210,9 @@ module control_unit (
             end
             7'b0110111: begin // LUI
                 RegWrite  = 1'b1;
-                ResultSrc = RES_IMM;
+                ResultSrc = RES_ALU;  // Changed from RES_IMM to RES_ALU
                 ALUControl= OP_ADD;
+                ALUSrc    = 1'b1;     // Added: select immediate for ALU B input
                 ImmSrc    = IMM_U;
             end
             7'b0010111: begin // AUIPC
@@ -194,6 +220,7 @@ module control_unit (
                 ResultSrc = RES_ALU;
                 ALUControl= OP_ADD;
                 ALUSrc    = 1'b1;
+                ALUSrcA   = 1'b1;     // Use PC for ALU A
                 ImmSrc    = IMM_U;
             end
             default: begin

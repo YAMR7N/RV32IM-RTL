@@ -10,6 +10,8 @@ module id_ex_reg (
     input         BranchD,
     input  [4:0]  ALUControlD, // Updated to 5 bits
     input         ALUSrcD,
+    input         ALUSrcAD,      // New: ALU source A select
+    input         BranchInvertD,
     input  [31:0] RD1D,
     input  [31:0] RD2D,
     input  [31:0] PCD,
@@ -25,6 +27,8 @@ module id_ex_reg (
     output reg    BranchE,
     output reg [4:0] ALUControlE, // Updated to 5 bits
     output reg    ALUSrcE,
+    output reg    ALUSrcAE,      // New: ALU source A select
+    output reg    BranchInvertE,
     output reg [31:0] RD1E,
     output reg [31:0] RD2E,
     output reg [31:0] PCE,
@@ -43,6 +47,8 @@ module id_ex_reg (
             BranchE     <= 0;
             ALUControlE <= 5'b11111; // OP_NOP
             ALUSrcE     <= 0;
+            ALUSrcAE    <= 0;     // Reset ALUSrcA
+            BranchInvertE <= 0;
             RD1E        <= 0;
             RD2E        <= 0;
             PCE         <= 0;
@@ -59,6 +65,7 @@ module id_ex_reg (
             BranchE     <= 0;
             ALUControlE <= 5'b11111; // OP_NOP
             ALUSrcE     <= 0;
+            ALUSrcAE    <= 0;     // Clear ALUSrcA
             RD1E        <= 0;
             RD2E        <= 0;
             PCE         <= 0;
@@ -75,6 +82,8 @@ module id_ex_reg (
             BranchE     <= BranchD;
             ALUControlE <= ALUControlD;
             ALUSrcE     <= ALUSrcD;
+            ALUSrcAE    <= ALUSrcAD;      // Propagate ALUSrcA
+            BranchInvertE <= BranchInvertD;
             RD1E        <= RD1D;
             RD2E        <= RD2D;
             PCE         <= PCD;

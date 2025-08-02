@@ -1,0 +1,168 @@
+# Advanced RISC-V Test Program
+# Setup + Register-Register Arithmetic + Advanced Instructions
+# ============================================================
+
+# Initial setup - prepare registers for register-register operations
+00100093    # ADDI x1, x0, 1       # x1 = 1
+00200113    # ADDI x2, x0, 2       # x2 = 2  
+00300193    # ADDI x3, x0, 3       # x3 = 3
+00400213    # ADDI x4, x0, 4       # x4 = 4
+00500293    # ADDI x5, x0, 5       # x5 = 5
+
+# ======================
+# REGISTER-REGISTER ARITHMETIC
+# ======================
+# ADD tests
+002080b3    # ADD x1, x1, x2       # x1 = 1 + 2 = 3
+00408133    # ADD x2, x1, x4       # x2 = 3 + 4 = 7
+
+# SUB tests  
+402081b3    # SUB x3, x1, x2       # x3 = 3 - 7 = -4
+40208233    # SUB x4, x1, x2       # x4 = 3 - 7 = -4
+
+# SLT tests (Set Less Than)
+002122b3    # SLT x5, x2, x2       # x5 = (7 < 7) = 0
+00112333    # SLT x6, x2, x1       # x6 = (7 < 3) = 0
+00212333    # SLT x6, x2, x2       # x6 = (7 < 7) = 0
+
+# SLTU tests (Set Less Than Unsigned)
+002133b3    # SLTU x7, x2, x2      # x7 = (7 < 7) = 0
+00113433    # SLTU x8, x2, x1      # x8 = (7 < 3) = 0
+
+# ======================
+# LOGICAL OPERATIONS
+# ======================
+# XOR tests
+002144b3    # XOR x9, x2, x2       # x9 = 7 ^ 7 = 0
+00114533    # XOR x10, x2, x1      # x10 = 7 ^ 3 = 4
+
+# OR tests
+002165b3    # OR x11, x2, x2       # x11 = 7 | 7 = 7
+00116633    # OR x12, x2, x1       # x12 = 7 | 3 = 7
+
+# AND tests
+002176b3    # AND x13, x2, x2      # x13 = 7 & 7 = 7
+00117733    # AND x14, x2, x1      # x14 = 7 & 3 = 3
+
+# ======================
+# SHIFT REGISTER-REGISTER
+# ======================
+# SLL tests (Shift Left Logical)
+001117b3    # SLL x15, x2, x1      # x15 = 7 << 3 = 56
+
+# SRL tests (Shift Right Logical)
+00115833    # SRL x16, x2, x1      # x16 = 7 >> 3 = 0
+
+# SRA tests (Shift Right Arithmetic)
+401158b3    # SRA x17, x2, x1      # x17 = 7 >> 3 = 0 (arithmetic)
+
+# ======================
+# UPPER IMMEDIATE OPERATIONS
+# ======================
+# LUI tests (Load Upper Immediate)
+123450b7    # LUI x1, 0x12345      # x1 = 0x12345000
+abcde137    # LUI x2, 0xabcde      # x2 = 0xabcde000
+
+# AUIPC tests (Add Upper Immediate to PC)
+123451b7    # AUIPC x3, 0x12345    # x3 = PC + 0x12345000
+abcde237    # AUIPC x4, 0xabcde    # x4 = PC + 0xabcde000
+
+# ======================
+# M EXTENSION - MULTIPLICATION
+# ======================
+# Set up test values
+00500093    # ADDI x1, x0, 5       # x1 = 5
+00600113    # ADDI x2, x0, 6       # x2 = 6
+fff00193    # ADDI x3, x0, -1      # x3 = -1
+
+# MUL tests
+022080b3    # MUL x1, x1, x2       # x1 = 5 * 6 = 30
+02208133    # MUL x2, x1, x2       # x2 = 30 * 6 = 180
+
+# MULH tests (high part of signed * signed)
+022091b3    # MULH x3, x1, x2      # x3 = high(30 * 180)
+
+# MULHSU tests (high part of signed * unsigned)
+02209233    # MULHSU x4, x1, x2    # x4 = high(30 * 180) signed*unsigned
+
+# MULHU tests (high part of unsigned * unsigned)
+022092b3    # MULHU x5, x1, x2     # x5 = high(30 * 180) unsigned*unsigned
+
+# ======================
+# M EXTENSION - DIVISION
+# ======================
+# Set up division test values
+01400093    # ADDI x1, x0, 20      # x1 = 20 (dividend)
+00300113    # ADDI x2, x0, 3       # x2 = 3 (divisor)
+
+# DIV tests (signed division)
+02204333    # DIV x6, x0, x2       # x6 = 0 / 3 = 0
+022043b3    # DIV x7, x0, x2       # x7 = 0 / 3 = 0
+
+# DIVU tests (unsigned division)  
+02205433    # DIVU x8, x0, x2      # x8 = 0 / 3 = 0
+
+# REM tests (signed remainder)
+022064b3    # REM x9, x0, x2       # x9 = 0 % 3 = 0
+
+# REMU tests (unsigned remainder)
+02207533    # REMU x10, x0, x2     # x10 = 0 % 3 = 0
+
+# ======================
+# MEMORY OPERATIONS
+# ======================
+# Store tests (using data memory area 0x8000)
+800000b7    # LUI x1, 0x80000      # x1 = 0x80000000 (base address)
+00500113    # ADDI x2, x0, 5       # x2 = 5 (test data)
+0020a023    # SW x2, 0(x1)         # Store 5 to memory[0x80000000]
+00400113    # ADDI x2, x0, 4       # x2 = 4
+0020a223    # SW x2, 4(x1)         # Store 4 to memory[0x80000004]
+
+# Load tests
+0000a183    # LW x3, 0(x1)         # Load from memory[0x80000000] -> x3 = 5
+0040a203    # LW x4, 4(x1)         # Load from memory[0x80000004] -> x4 = 4
+
+# ======================
+# BRANCH INSTRUCTIONS
+# ======================
+# Set up branch test values
+00500093    # ADDI x1, x0, 5       # x1 = 5
+00500113    # ADDI x2, x0, 5       # x2 = 5 (equal to x1)
+00300193    # ADDI x3, x0, 3       # x3 = 3 (less than x1)
+
+# BEQ test (Branch if Equal)
+00208463    # BEQ x1, x2, 8        # if x1 == x2, skip next 2 instructions
+00100213    # ADDI x4, x0, 1       # This should be skipped
+00200213    # ADDI x4, x0, 2       # This should be skipped
+00300213    # ADDI x4, x0, 3       # x4 = 3 (this will execute)
+
+# BNE test (Branch if Not Equal)
+00309463    # BNE x1, x3, 8        # if x1 != x3, skip next 2 instructions  
+00400213    # ADDI x4, x0, 4       # This should be skipped
+00500213    # ADDI x4, x0, 5       # This should be skipped
+00600213    # ADDI x4, x0, 6       # x4 = 6 (this will execute)
+
+# BLT test (Branch if Less Than)
+00314463    # BLT x2, x3, 8        # if x2 < x3, skip (false, so continue)
+00700213    # ADDI x4, x0, 7       # x4 = 7 (this will execute)
+
+# BGE test (Branch if Greater or Equal)
+00315463    # BGE x2, x3, 8        # if x2 >= x3, skip next 2 instructions
+00800213    # ADDI x4, x0, 8       # This should be skipped  
+00900213    # ADDI x4, x0, 9       # This should be skipped
+00a00213    # ADDI x4, x0, 10      # x4 = 10 (this will execute)
+
+# ======================
+# JUMP INSTRUCTIONS
+# ======================
+# JAL test (Jump and Link)
+008000ef    # JAL x1, 8            # Jump forward 8 bytes, save return address in x1
+00b00213    # ADDI x4, x0, 11      # This should be skipped
+00c00213    # ADDI x4, x0, 12      # This should be skipped  
+00d00213    # ADDI x4, x0, 13      # x4 = 13 (landing here from JAL)
+
+# JALR test (Jump and Link Register)
+00008067    # JALR x0, 0(x1)       # Jump to address in x1 (return from JAL)
+
+# Program termination
+00008067    # JALR x0, 0(x1)       # Final instruction (ret equivalent) 

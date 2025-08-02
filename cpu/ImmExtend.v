@@ -27,10 +27,11 @@ module imm_ext (
     assign J_OUT[31:21] = {11{IN[24]}};
 
     // B-Type Immediate (branches)
-    assign B_OUT[1:0]   = 2'b00;
-    assign B_OUT[5:2]   = IN[4:1];
-    assign B_OUT[11:6]  = IN[23:18];
-    assign B_OUT[12]    = IN[0];
+    assign B_OUT[0]     = 1'b0;          // Always 0 (2-byte aligned)
+    assign B_OUT[4:1]   = IN[4:1];       // imm[4:1] from instr[11:8]
+    assign B_OUT[10:5]  = IN[23:18];     // imm[10:5] from instr[30:25]
+    assign B_OUT[11]    = IN[0];         // imm[11] from instr[7]
+    assign B_OUT[12]    = IN[24];        // imm[12] from instr[31]
     assign B_OUT[31:13] = {19{IN[24]}};
 
     // I-Type Immediate (signed, for loads, JALR, ALU ops)

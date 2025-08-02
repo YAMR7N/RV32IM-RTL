@@ -13,9 +13,21 @@
 `include "RegFile.v"
 `include "ImmExtend.v"
 `include "PcReg.v"
+`include "Address_Decoder.v"
+`include "gpio.v"
+`include "Interconnect.v"
 
-module rv32im_processor (
-    input clk, reset
+
+module rv32im_processor #(
+    parameter PROGRAM_FILE = "advanced_test_clean.hex", 
+    parameter LAST_INSTRUCTION = 32'h00008067 
+)
+(
+    input clk, reset ,
+    output reg done,
+    // GPIO interface
+    inout  [31:0] gpio_pins,
+    output        gpio_irq
 );
     // Fetch Stage
     wire [31:0] PCF, PCNext, PCPlus4F, InstrF;
@@ -37,11 +49,34 @@ module rv32im_processor (
         .y(PCPlus4F)
     );
 
-    // Instruction Memory
-    instruction_memory imem (
-        .A(PCF),
-        .RD(InstrF)
-    );
+    // // Instruction Memory
+    // instruction_memory 
+    // imem (
+    //     .A(PCF),
+    //     .RD(InstrF)
+    // );
+    
+    
+    wire MemWriteM ; 
+    wire [31:0] ReadDataM, WriteDataM, ALUResultM;
+    // Instruction Memory Interconnect
+    memory_interconnect  #(
+        .PROGRAM_FILE(PROGRAM_FILE),
+        .LAST_INSTRUCTION(LAST_INSTRUCTION)
+    )
+    mem_intc
+    (
+    .clk(clk),
+    .reset(reset),
+    .pc(PCF),
+    .inst_rd(InstrF),
+    .mem_we(MemWriteM),
+    .addr(ALUResultM),
+    .wdata(WriteDataM),
+    .rdata(ReadDataM),
+    .gpio_pins(gpio_pins),
+    .gpio_irq(gpio_irq)
+  );
 
     // IF/ID Register
     wire [31:0] InstrD, PCPlus4D, PCD;
@@ -56,18 +91,20 @@ module rv32im_processor (
         .PCPlus4D(PCPlus4D),
         .InstrD(InstrD)
     );
-    assign PCD = PCF; // Not explicitly stored in IF/ID, but needed in Decode
+    assign PCD = PCF; // Use current fetch PC
+
+    
 
     // Decode Stage
     wire [4:0] Rs1D, Rs2D, RdD;
     wire [31:0] RD1D, RD2D, ImmExtD;
-    wire RegWriteD, MemWriteD, JumpD, BranchD, ALUSrcD;
+    wire RegWriteD, MemWriteD, JumpD, BranchD, ALUSrcD, ALUSrcAD;
     wire [1:0] ResultSrcD;
     wire [4:0] ALUControlD;
     wire [2:0] ImmSrcD;
 
     // Extract instruction fields
-    assign Rs1D = InstrD[19:15];
+    assign Rs1D = (InstrD[6:0] == 7'b0110111) ? 5'd0 : InstrD[19:15]; // Force x0 for LUI
     assign Rs2D = InstrD[24:20];
     assign RdD  = InstrD[11:7];
 
@@ -85,13 +122,16 @@ module rv32im_processor (
         .RD1(RD1D),
         .RD2(RD2D)
     );
+    integer i ; 
+
     // Initialize registers to 0 (not in regfile module, added here for simulation)
     initial begin
-        for (integer i = 0; i < 32; i = i + 1)
+        for (i = 0; i < 32; i = i + 1)
             rf.regs[i] = 32'h0;
     end
 
     // Control Unit
+    wire BranchInvertD;
     control_unit cu (
         .opcode(InstrD[6:0]),
         .funct3(InstrD[14:12]),
@@ -104,7 +144,9 @@ module rv32im_processor (
         .Branch(BranchD),
         .ALUControl(ALUControlD),
         .ALUSrc(ALUSrcD),
-        .ImmSrc(ImmSrcD)
+        .ALUSrcA(ALUSrcAD),
+        .ImmSrc(ImmSrcD),
+        .BranchInvert(BranchInvertD)
     );
 
     // Immediate Extension
@@ -115,7 +157,8 @@ module rv32im_processor (
     );
 
     // ID/EX Register
-    wire RegWriteE, MemWriteE, JumpE, BranchE, ALUSrcE, ZeroE;
+    wire RegWriteE, MemWriteE, JumpE, BranchE, ALUSrcE, ALUSrcAE, ZeroE;
+    wire BranchInvertE;
     wire [1:0] ResultSrcE;
     wire [4:0] ALUControlE;
     wire [31:0] RD1E, RD2E, PCE, PCPlus4E, ImmExtE;
@@ -133,6 +176,8 @@ module rv32im_processor (
         .BranchD(BranchD),
         .ALUControlD(ALUControlD),
         .ALUSrcD(ALUSrcD),
+        .ALUSrcAD(ALUSrcAD),
+        .BranchInvertD(BranchInvertD),
         .RD1D(RD1D),
         .RD2D(RD2D),
         .PCD(PCD),
@@ -148,6 +193,8 @@ module rv32im_processor (
         .BranchE(BranchE),
         .ALUControlE(ALUControlE),
         .ALUSrcE(ALUSrcE),
+        .ALUSrcAE(ALUSrcAE),
+        .BranchInvertE(BranchInvertE),
         .RD1E(RD1E),
         .RD2E(RD2E),
         .PCE(PCE),
@@ -159,46 +206,59 @@ module rv32im_processor (
     );
 
     // Execute Stage
-    wire [31:0] ALUResultM, WriteDataM, PCTargetE;
+    wire [31:0] ALUResultE , PCTargetE;
     wire [1:0] FwdAE, FwdBE;
     wire [31:0] SrcAE, SrcBE;
+    wire [31:0] WriteDataE;
 
     // Forwarding Muxes
     wire [31:0] ResultM; // ALUResultM forwarded from Memory stage
     wire [31:0] ALUResultW, ReadDataW, PCPlus4W;
     wire [1:0] ResultSrcW;
+    wire [31:0] ForwardedB; // Intermediate signal for forwarded B value
+    wire [31:0] ForwardedA; // Intermediate signal for forwarded A value
+    
     mux3 fwdA (
         .d0(RD1E),
         .d1(ResultW),
-        .d2(ResultM),
+        .d2(ALUResultM),
         .s(FwdAE),
+        .y(ForwardedA)
+    );
+    
+    // ALU Source A Mux (select between forwarded register value and PC)
+    mux2 alu_srcA (
+        .d0(ForwardedA),
+        .d1(PCE),
+        .s(ALUSrcAE),
         .y(SrcAE)
     );
+
     mux3 fwdB (
         .d0(RD2E),
         .d1(ResultW),
-        .d2(ResultM),
+        .d2(ALUResultM),
         .s(FwdBE),
-        .y(WriteDataM)
+        .y(ForwardedB)  // FIXED: Output forwarded B value to intermediate signal
     );
 
-    // ALU Source Mux (extended for PCE)
-    wire [1:0] ALUSrcE_extended;
-    assign ALUSrcE_extended = {JumpE, ALUSrcE}; // 2'b00: RD2E, 2'b01: ImmExtE, 2'b1x: PCE
-    mux3 alu_srcB (
-        .d0(WriteDataM),
+    // ALU Source Mux for B input
+    mux2 alu_srcB (
+        .d0(ForwardedB),  // FIXED: Use forwarded B value instead of WriteDataE
         .d1(ImmExtE),
-        .d2(PCE),
-        .s(ALUSrcE_extended),
+        .s(ALUSrcE),
         .y(SrcBE)
     );
+    
+    // WriteDataE should be the forwarded B value (for store operations)
+    assign WriteDataE = ForwardedB;
 
     // ALU
     alu alu (
         .A(SrcAE),
         .B(SrcBE),
         .ALUControlE(ALUControlE),
-        .ALUResultM(ALUResultM),
+        .ALUResultE(ALUResultE),
         .ZeroE(ZeroE)
     );
 
@@ -210,7 +270,7 @@ module rv32im_processor (
     );
 
     // EX/MEM Register
-    wire RegWriteM, MemWriteM, PCSrcE;
+    wire RegWriteM , PCSrcE ;
     wire [1:0] ResultSrcM;
     wire [4:0] RdM;
     wire [31:0] PCPlus4M;
@@ -219,30 +279,69 @@ module rv32im_processor (
         .reset(reset),
         .RegWriteE(RegWriteE),
         .ResultSrcE(ResultSrcE),
+
+        
+        //error corrected it was MemWriteM so there was a short circuit
         .MemWriteE(MemWriteE),
-        .ALUResultE(ALUResultM),
-        .WriteDataE(WriteDataM),
+        //error conrrected it was ALUResultM there was a short circuit
+        .ALUResultE(ALUResultE),
+
+        .WriteDataE(WriteDataE),
         .RdE(RdE),
         .PCPlus4E(PCPlus4E),
         .RegWriteM(RegWriteM),
         .ResultSrcM(ResultSrcM),
         .MemWriteM(MemWriteM),
-        .ALUResultM(ResultM),
+        .ALUResultM(ALUResultM),
         .WriteDataM(WriteDataM),
         .RdM(RdM),
         .PCPlus4M(PCPlus4M)
     );
-    assign PCSrcE = (BranchE & ZeroE) | JumpE; // Compute PCSrcE
+    // Simpler branch logic using BranchInvert
+    wire BranchCondition;
+    // For SUB (used by BEQ/BNE): use Zero flag
+    // For SLT/SLTU (used by BLT/BGE/BLTU/BGEU): use ALU result (1 if less, 0 if greater/equal)
+    assign BranchCondition = (ALUControlE == 5'b00010) ? ZeroE :    // SUB: use Zero flag
+                             ALUResultE[0];                          // SLT/SLTU: use result bit 0
+    
+    wire BranchTakenE;
+    assign BranchTakenE = BranchInvertE ? ~BranchCondition : BranchCondition;
+    
+    assign PCSrcE = (BranchE & BranchTakenE) | JumpE; 
+
+
+
 
     // Memory Stage
-    wire [31:0] ReadDataM;
-    data_memory dmem (
-        .clk(clk),
-        .WE(MemWriteM),
-        .A(ResultM),
-        .WD(WriteDataM),
-        .RD(ReadDataM)
-    );
+    
+    // Done signal logic (FIXED to trigger on JALR execution)
+    initial begin
+        done = 1'b0;
+    end
+    
+    always @(posedge clk) begin
+        if (reset) begin
+            done <= 0;
+        end else if (MemWriteM && (ALUResultM == 32'h000000ff)) begin
+            // METHOD 1: Software-controlled done signal
+            done <= WriteDataM[0];
+        end else if (InstrF == LAST_INSTRUCTION) begin
+            // METHOD 2: Hardware detection of JALR execution
+            $display("[%0t] JALR instruction (0x%08h) detected - terminating program", $time, InstrF);
+            done <= 1;
+        end
+    end
+
+
+    // data_memory dmem (
+    //     .clk(clk),
+    //     .WE(MemWriteM),
+    //     .A(ALUResultM),
+    //     .WD(WriteDataM),
+    //     .RD(ReadDataM)
+    // );
+
+
 
     // MEM/WB Register
     mem_wb_reg memwb (
@@ -250,7 +349,7 @@ module rv32im_processor (
         .reset(reset),
         .RegWriteM(RegWriteM),
         .ResultSrcM(ResultSrcM),
-        .ALUResultM(ResultM),
+        .ALUResultM(ALUResultM),
         .ReadDataM(ReadDataM),
         .RdM(RdM),
         .PCPlus4M(PCPlus4M),
@@ -299,4 +398,7 @@ module rv32im_processor (
         .s(PCSrcE),
         .y(PCNext)
     );
+
+
+
 endmodule

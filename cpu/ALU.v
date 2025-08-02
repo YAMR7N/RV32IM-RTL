@@ -2,8 +2,8 @@ module alu (
     input  [31:0] A,          // First 32-bit input (RD1E after forwarding)
     input  [31:0] B,          // Second 32-bit input (RD2E/ImmExtE after forwarding)
     input  [4:0]  ALUControlE, // 5-bit control signal (from ID/EX)
-    output [31:0] ALUResultM, // 32-bit result (to EX/MEM)
-    output        ZeroE       // Zero flag (1 if ALUResultM == 0, for branches)
+    output [31:0] ALUResultE, // 32-bit result (to EX/MEM)
+    output        ZeroE       // Zero flag (1 if ALUResultE == 0, for branches)
 );
     // ALU operation codes (matching control_unit)
     localparam [4:0]
@@ -103,6 +103,6 @@ module alu (
     end
 
     // Assign outputs
-    assign ALUResultM = result_reg;
+    assign ALUResultE = result_reg;
     assign ZeroE = (result_reg == 32'h0);
 endmodule

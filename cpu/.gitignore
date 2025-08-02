@@ -1,0 +1,23 @@
+# VCD simulation files
+*.vcd
+
+# VVP compiled files
+*.vvp
+
+# Compiled executables
+advanced_test
+debug_sim
+fir_filter_sim
+test_fir
+debug_fir
+fir_validate_simple
+
+# Log files
+*.log
+
+# Image files
+*.png
+
+# Python cache
+__pycache__/
+*.pyc
